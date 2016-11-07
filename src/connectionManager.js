@@ -61,6 +61,8 @@ function updateBlackList() {
 // periodically update its own node list and the blacklist
 (function refreshNodes() {
   var peerList = ipfs.getPeers();
+  // filter for only our peers
+
   for (var i = 0; i < peerList.length; ++i) {
     if (nodeObj[peerList[i].id]) {
       nodeObj[peerList[i].id].lastOnline = Date.getTime();
@@ -84,7 +86,7 @@ function updateBlackList() {
       return 1;
     }
     return 0;
-  })
+  });
   // do some node cleanup...
   if (nodePriorityQueue.length > maxNodes) {
     // delete some nodes using some criteria
@@ -98,35 +100,35 @@ function updateBlackList() {
  */
 
 // calls functions to handle external requests
-function handleData(data) {
+function handleRequest(req) {
   // drop all requests that are by blacklisted nodes
   for (var i = 0; i < blackList.length; ++i) {
-    if (data.nodeId === blackList[i].nodeId) {
+    if (req.body.nodeId === blackList[i].nodeId) {
       return;
     }
   }
-  if (data.type === "request") {
-    if (nodeObj[data.nodeId]) {
-      nodeObj[data.nodeId].requests.add({
-        timestamp: Date.now()
-      });
-      if (nodeObj[data.nodeId].requests.length > maxRequests) {
-        updateBlackList();
-      }
-    } else {
-      nodeObj[data.nodeId] = new Node();
+
+  // can be nodeIp instead of nodeId
+  if (nodeObj[req.body.nodeId]) {
+    nodeObj[req.body.nodeId].requests.add({
+      timestamp: Date.now()
+    });
+    if (nodeObj[req.body.nodeId].requests.length > maxRequests) {
+      updateBlackList();
     }
-    peerAPI.handle(data);
   } else {
-    content.handle(data);
+    nodeObj[req.body.nodeId] = new Node();
   }
+  peerAPI.handle(req);
 }
 
-function sendData(req) {
+function sendRequest(req) {
   //pick some nodes to send data
+  var queue = [];
   for (var i = 0; i < nodePriorityQueue.length && i < maxRequests; ++i) {
-    ipfs.send(nodePriorityQueue[i].nodeId, req);
+    queue.push(ipfs.send(nodePriorityQueue[i].nodeId, req));
   }
+  return Promise.all(queue);
 }
 
 // updates trust value based on spam received
@@ -141,7 +143,7 @@ function updateNodeSpamPercentage(nodeId, percentage) {
 }
 
 connectionManagerAPI.init({
-  sendData: sendData,
-  handleData: handleRequest,
+  sendRequest: sendRequest,
+  handleRequest: handleRequest,
   updateNodeSpamPercentage: updateNodeSpamPercentage
 });
