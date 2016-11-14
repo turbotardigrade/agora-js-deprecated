@@ -7,18 +7,22 @@
  *  - keeps track of Post to Comment mapping
  *  - defines how content are stored
  *
+ * 
  * TODO:
  *  - Should reject to store anything above a set filesize
  *  - Check if public key are valid
- *  - Check
+ *  - Choose shorter public IDs?
  *
  * Ideas:
  *  - Comment blocks which does not get displayed, but could be used for programatic purposes
  */
 
+// Pinning: https://github.com/ipfs/interface-ipfs-core/pull/34
+
 "use strict";
 
 const crypto = require('crypto');
+const concat = require('concat-stream')
 
 /**********************************************************************
  * Constants and Configs
@@ -46,6 +50,7 @@ function Post(author, content) {
 
   this.timestamp = new Date().getTime();
 }
+
 
 function Comment(parent, author, content) {
   // @TODO check if parent hash valid
@@ -85,37 +90,6 @@ function verify(item) {
   return verify.verify(key, signature, CRYP_ENCODE);
 }
 
-/**********************************************************************
- * Exported functions
- */
-function createPost(node, content) {
-  var post = new Post(me, content);
-
-  // For testing
-  console.log(verify(post));
-
-  var file = {
-    path: 'long/'+'test.ag', // @todo change
-    content: new Buffer(JSON.stringify(post))  // @TODO use serializer instead
-  };
-
-  return saveFile(node, file);
-}
-
-function createComment(node, postID, content) {
-  var comment = new Comment(postID, me, content);
-
-  // For testing
-  console.log(verify(comment));
-
-  var file = {
-    path: 'long/'+'test.ag', // @todo change
-    content: new Buffer(JSON.stringify(post))  // @TODO use serializer instead
-  };
-
-  return saveFile(node, file);
-}
-
 function saveFile(node, file) {
   return new Promise(function(resolve, reject) {
     node.files.add(file, function (err, result) {
@@ -127,8 +101,59 @@ function saveFile(node, file) {
   });
 }
 
+/**********************************************************************
+ * Exported functions
+ */
+function createPost(node, content) {
+  var post = new Post(me, content);
+
+  var file = {
+    path: 'long/'+'test.ag', // @todo change
+    content: new Buffer(JSON.stringify(post))
+  };
+
+  return saveFile(node, file);
+}
+
+function createComment(node, postID, content) {
+  var comment = new Comment(postID, me, content);
+
+  var file = {
+    path: 'long/'+'test.ag', // @todo change
+    content: new Buffer(JSON.stringify(post))
+  };
+
+  return saveFile(node, file);
+}
+
+function loadFile(node, hash) {
+  return new Promise(function(resolve, reject) {
+
+    var cb = (buffer) => {
+      var item = JSON.parse(buffer);
+
+      if (!verify(item)) {
+	reject(new Error('Signature invalid'));
+      }
+
+      resolve(item);
+    }
+	  
+    node.files.get(hash, (err, stream) => { // Note stream is in object mode
+      if (err) {
+	reject(err);
+      }
+      
+      stream.on('data', (file) => {
+	file.content.pipe(concat({encoding: 'string'}, cb));
+      });
+    });
+    
+  });
+}
+
 module.exports = {
   createPost,
-  createComment
-  //pull
+  createComment,
+  loadFile
 }
