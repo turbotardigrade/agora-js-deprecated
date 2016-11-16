@@ -1,25 +1,24 @@
 const ipfs = require('ipfs');
 const node = new ipfs();
 
-var dm = require('./dataManagement');
+const dm = require('./dataManagement');
 
 function createPostAndCommentTest() {
-  dm.createPost(node, "Hello world!").then(function(data) {
-    //console.log(data);
+  dm.createPost(node, 'Hello world!').then((data) => {
+    // console.log(data);
 
-    dm.createPost(node, data[0].hash, "Hello world!").then(function(d) {
-      //console.log(d);
-    }, function(err) {
+    dm.createPost(node, data[0].hash, 'Hello world!').then((d) => {
+      // console.log(d);
+    }, (err) => {
       console.log(err);
     });
 
-    dm.loadFile(node, data[0].hash).then(function(item) {
+    dm.loadFile(node, data[0].hash).then((item) => {
       console.log(item);
-    }, function(err) {
+    }, (err) => {
       console.log(err);
     });
-    
-  }, function(err) {
+  }, (err) => {
     console.log(err);
   });
 }
