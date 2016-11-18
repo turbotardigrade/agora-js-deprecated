@@ -149,7 +149,11 @@ function loadFile(node, hash) {
 }
 
 module.exports = {
+  Author,
+  Post,
+  Comment,
   createPost,
   createComment,
+  saveFile, // TODO should not be exposed, but needed for testing
   loadFile,
 };
