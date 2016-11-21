@@ -154,6 +154,5 @@ module.exports = {
   Comment,
   createPost,
   createComment,
-  saveFile, // TODO should not be exposed, but needed for testing
   loadFile,
 };

@@ -42,13 +42,21 @@ describe('dataManagement', function () {
       content: new Buffer(JSON.stringify(post)),
     };
 
-    return dm.saveFile(node, file)
-      .then(files => {
-        return dm.loadFile(node, files[0].hash);
-      })
-      .catch(e => {
-        // TODO check for error message
-        assert(e);
-      });
+    return node.files.add(file, (err, result) => {
+      if (err != null) {
+        assert(err);
+      }
+      
+      return dm.saveFile(node, file)
+	.then(files => {
+	    return dm.loadFile(node, files[0].hash);
+	})
+	.catch(e => {
+	    // TODO check for error message
+	    assert(e);
+	});
+	
+    });
+
   });
 });
