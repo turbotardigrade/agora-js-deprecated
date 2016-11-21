@@ -16,22 +16,22 @@ describe('dataManagement', function () {
   const node = new IPFS();
 
   // TODO check if path is correct
-  it('createPost should run correctly without errors', function(done) {
-    dm.createPost(node, 'Hello world!').then((files) => {
-      assert(files.length > 1, 'has at least 2 file references (file and directory)');
-      done();
-    }, done);
+  it('createPost should run correctly without errors', function() {
+    return dm.createPost(node, 'Hello world!')
+      .then(files => {
+        assert(files.length > 1, 'has at least 2 file references (file and directory)');
+      });
   });
 
   // TODO check hash as well
-  it('createComment should run correctly without errors', function(done) {
-    dm.createComment(node, 'fake hashID', 'Hello world!').then((files) => {
-      assert(files.length > 1, 'has at least 2 file references (file and directory)');
-      done();
-    }, done);
+  it('createComment should run correctly without errors', function() {
+    return dm.createComment(node, 'fake hashID', 'Hello world!')
+      .then(files => {
+        assert(files.length > 1, 'has at least 2 file references (file and directory)');
+      });
   });
 
-  it('loadFile should refuse tampered data', function(done) {
+  it('loadFile should refuse tampered data', function() {
     const post = new Post(me, 'Hello World!');
 
     // Tamper with file before uploading to IPFS
@@ -42,15 +42,13 @@ describe('dataManagement', function () {
       content: new Buffer(JSON.stringify(post)),
     };
 
-    dm.saveFile(node, file).then(function (files) {
-      dm.loadFile(node, files[0].hash).then(function () {
-	assert(false);
-	done();
-      }, function (err) {
-	// TODO check for error message
-	done();
+    return dm.saveFile(node, file)
+      .then(files => {
+        return dm.loadFile(node, files[0].hash);
+      })
+      .catch(e => {
+        // TODO check for error message
+        assert(e);
       });
-    }, done);
   });
-  
 });
