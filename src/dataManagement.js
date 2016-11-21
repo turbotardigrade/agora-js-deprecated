@@ -1,5 +1,5 @@
 /**
- * @maintainer: Long Hoang <long@mindwokrer.de>
+ * @maintainer: Long Hoang <long@mindworker.de>
  *
  * Data Management
  *  - interacts with the IPFS Files API
