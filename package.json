@@ -11,10 +11,14 @@
   "license": "ISC",
   "dependencies": {
     "concat-stream": "^1.5.2",
+    "hapi": "^15.2.0",
     "ipfs": "^0.18.0"
   },
   "devDependencies": {
     "chai": "^3.5.0",
+    "eslint": "^3.10.2",
+    "eslint-config-airbnb-base": "^10.0.1",
+    "eslint-plugin-import": "^2.2.0",
     "mocha": "^3.1.2"
   },
   "contributors": [
