@@ -19,8 +19,11 @@
 
 // Pinning: https://github.com/ipfs/interface-ipfs-core/pull/34
 
+'use strict';
+
 const crypto = require('crypto');
 const concat = require('concat-stream');
+const conf = require('./config');
 
 /**
  * Constants and Configs
@@ -28,23 +31,20 @@ const concat = require('concat-stream');
 const SIGN_METHOD = 'sha256';
 const CRYP_ENCODE = 'base64';
 
-const conf = require('./config');
-const me = new Author(conf.publicKey, conf.alias);
-
 /**
  * Helper Functions
  */
-function sign(content) {
+function createSign(content) {
   const sign = crypto.createSign(SIGN_METHOD);
 
   sign.write(content);
   sign.end();
 
-  const private_key = conf.privateKey;
-  return sign.sign(private_key, CRYP_ENCODE);
+  const privateKey = conf.privateKey;
+  return sign.sign(privateKey, CRYP_ENCODE);
 }
 
-function verify(item) {
+function verifyItem(item) {
   const content = item.content;
   const key = item.authorKey;
   const signature = item.signature;
@@ -71,19 +71,22 @@ function saveFile(node, file) {
 /**
  * Data structures
  */
-function Author(pubKey, alias) {
-  this.key = pubKey;
-  this.alias = alias;
+class Author {
+  constructor(pubKey, alias) {
+    this.key = pubKey;
+    this.alias = alias;
+  }
 }
 
 // Note: No PostID specified as ID will be given through IPFS
-function Post(author, content) {
-  this.authorKey = author.key;
-  this.authorAlias = author.alias;
-  this.content = content;
-  this.signature = sign(content);
-
-  this.timestamp = new Date().getTime();
+class Post {
+  constructor(author, content) {
+    this.authorKey = author.key;
+    this.authorAlias = author.alias;
+    this.content = content;
+    this.signature = createSign(content);
+    this.timestamp = new Date().getTime();
+  }
 }
 
 
@@ -94,10 +97,12 @@ function Comment(parent, author, content) {
   this.authorKey = author.key;
   this.authorAlias = author.alias;
   this.content = content;
-  this.signature = sign(content);
+  this.signature = createSign(content);
 
   this.timestamp = new Date().getTime();
 }
+
+const me = new Author(conf.publicKey, conf.alias);
 
 /**
  * Exported functions
@@ -106,7 +111,7 @@ function createPost(node, content) {
   const post = new Post(me, content);
 
   const file = {
-    path: 'long/' + 'test.ag', // @todo change
+    path: 'long/test.ag', // @todo change
     content: new Buffer(JSON.stringify(post)),
   };
 
@@ -129,7 +134,7 @@ function loadFile(node, hash) {
     const cb = (buffer) => {
       const item = JSON.parse(buffer);
 
-      if (!verify(item)) {
+      if (!verifyItem(item)) {
         reject(new Error('Signature invalid'));
       }
 
