@@ -19,7 +19,6 @@
 
 // Pinning: https://github.com/ipfs/interface-ipfs-core/pull/34
 
-'use strict';
 
 const crypto = require('crypto');
 const concat = require('concat-stream');
@@ -59,6 +58,10 @@ function verifyItem(item) {
 
 function saveFile(node, file) {
   return new Promise((resolve, reject) => {
+    if (Buffer.byteLength(file.content, 'utf8') > 10000) {
+      reject(new Error('File too big, reject saving file.'));
+    }
+
     node.files.add(file, (err, result) => {
       if (err != null) {
         reject(err);
@@ -88,7 +91,6 @@ class Post {
     this.timestamp = new Date().getTime();
   }
 }
-
 
 function Comment(parent, author, content) {
   // @TODO check if parent hash valid
@@ -133,9 +135,10 @@ function loadFile(node, hash) {
   return new Promise((resolve, reject) => {
     const cb = (buffer) => {
       const item = JSON.parse(buffer);
-
+      reject(item);
       if (!verifyItem(item)) {
         reject(new Error('Signature invalid'));
+        return;
       }
 
       resolve(item);
@@ -144,6 +147,7 @@ function loadFile(node, hash) {
     node.files.get(hash, (err, stream) => { // Note stream is in object mode
       if (err) {
         reject(err);
+        return;
       }
 
       stream.on('data', (file) => {
