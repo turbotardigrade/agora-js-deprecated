@@ -9,19 +9,21 @@
  *
  *
  * TODO:
- *  - Should reject to store anything above a set filesize
  *  - Check if public key are valid
  *  - Choose shorter public IDs?
  *
- * Ideas:
- *  - Comment blocks which does not get displayed, but could be used for programatic purposes
  */
 
 // Pinning: https://github.com/ipfs/interface-ipfs-core/pull/34
 
-
 const crypto = require('crypto');
 const concat = require('concat-stream');
+const Datastore = require('nedb');
+
+// @TODO was doing this, before computer crashes
+const posts = new Datastore({ filename: './data/posts', autoload: true });
+const comments = new Datastore({ filename: './data/comments', autoload: true });
+
 const conf = require('./config');
 
 /**
@@ -92,9 +94,10 @@ class Post {
   }
 }
 
-function Comment(parent, author, content) {
+function Comment(parent, postID, author, content) {
   // @TODO check if parent hash valid
   this.parent = parent;
+  this.postID = postID;
 
   this.authorKey = author.key;
   this.authorAlias = author.alias;
@@ -117,25 +120,40 @@ function createPost(node, content) {
     content: new Buffer(JSON.stringify(post)),
   };
 
-  return saveFile(node, file);
+  return new Promise((resolve, reject) => {
+    saveFile(node, file).then(result => {
+      const hash = result[0].hash;
+      posts.insert({hash});
+      resolve(result);
+    }, err => {
+      reject(err);
+    });
+  });
 }
 
-function createComment(node, postID, content) {
-  const comment = new Comment(postID, me, content);
+function createComment(node, parent, postID, content) {
+  const comment = new Comment(parent, postID, me, content);
 
   const file = {
     path: 'long/test.ag', // @todo change
     content: new Buffer(JSON.stringify(comment)),
   };
 
-  return saveFile(node, file);
+  return new Promise((resolve, reject) => {
+    saveFile(node, file).then(result => {
+      const hash = result[0].hash;
+      comments.insert({hash, post: postID, parent});
+      resolve(result);
+    }, err => {
+      reject(err);
+    });
+  });
 }
 
 function loadFile(node, hash) {
   return new Promise((resolve, reject) => {
     const cb = (buffer) => {
       const item = JSON.parse(buffer);
-      reject(item);
       if (!verifyItem(item)) {
         reject(new Error('Signature invalid'));
         return;

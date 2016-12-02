@@ -30,7 +30,7 @@ describe('dataManagement', function () {
 
   // TODO check hash as well
   it('createComment should run correctly without errors', function () {
-    return dm.createComment(node, 'fake hashID', 'Hello world!')
+    return dm.createComment(node, 'fake hashID', 'fake postID', 'Hello world!')
 	     .then((files) => {
                assert(files.length > 1, 'has at least 2 file references (file and directory)');
 	     });
