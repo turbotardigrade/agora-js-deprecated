@@ -20,7 +20,6 @@ const crypto = require('crypto');
 const concat = require('concat-stream');
 const Datastore = require('nedb');
 
-// @TODO was doing this, before computer crashes
 const posts = new Datastore({ filename: './data/posts', autoload: true });
 const comments = new Datastore({ filename: './data/comments', autoload: true });
 
@@ -35,27 +34,27 @@ const CRYP_ENCODE = 'base64';
 /**
  * Helper Functions
  */
-function createSign(content) {
-  const sign = crypto.createSign(SIGN_METHOD);
+function sign(content) {
+  const signer = crypto.createSign(SIGN_METHOD);
 
-  sign.write(content);
-  sign.end();
+  signer.write(content);
+  signer.end();
 
   const privateKey = conf.privateKey;
-  return sign.sign(privateKey, CRYP_ENCODE);
+  return signer.sign(privateKey, CRYP_ENCODE);
 }
 
-function verifyItem(item) {
+function verify(item) {
   const content = item.content;
   const key = item.authorKey;
   const signature = item.signature;
 
-  const verify = crypto.createVerify(SIGN_METHOD);
+  const verifier = crypto.createVerify(SIGN_METHOD);
 
-  verify.write(content);
-  verify.end();
+  verifier.write(content);
+  verifier.end();
 
-  return verify.verify(key, signature, CRYP_ENCODE);
+  return verifier.verify(key, signature, CRYP_ENCODE);
 }
 
 function saveFile(node, file) {
@@ -89,7 +88,7 @@ class Post {
     this.authorKey = author.key;
     this.authorAlias = author.alias;
     this.content = content;
-    this.signature = createSign(content);
+    this.signature = sign(content);
     this.timestamp = new Date().getTime();
   }
 }
@@ -102,7 +101,7 @@ function Comment(parent, postID, author, content) {
   this.authorKey = author.key;
   this.authorAlias = author.alias;
   this.content = content;
-  this.signature = createSign(content);
+  this.signature = sign(content);
 
   this.timestamp = new Date().getTime();
 }
@@ -121,11 +120,12 @@ function createPost(node, content) {
   };
 
   return new Promise((resolve, reject) => {
-    saveFile(node, file).then(result => {
+    saveFile(node, file).then((result) => {
       const hash = result[0].hash;
-      posts.insert({hash});
+      posts.insert({ hash });
+
       resolve(result);
-    }, err => {
+    }, (err) => {
       reject(err);
     });
   });
@@ -140,11 +140,12 @@ function createComment(node, parent, postID, content) {
   };
 
   return new Promise((resolve, reject) => {
-    saveFile(node, file).then(result => {
+    saveFile(node, file).then((result) => {
       const hash = result[0].hash;
-      comments.insert({hash, post: postID, parent});
+      comments.insert({ hash, post: postID, parent });
+
       resolve(result);
-    }, err => {
+    }, (err) => {
       reject(err);
     });
   });
@@ -154,7 +155,7 @@ function loadFile(node, hash) {
   return new Promise((resolve, reject) => {
     const cb = (buffer) => {
       const item = JSON.parse(buffer);
-      if (!verifyItem(item)) {
+      if (!verify(item)) {
         reject(new Error('Signature invalid'));
         return;
       }

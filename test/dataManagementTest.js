@@ -3,7 +3,6 @@
 /* eslint-env mocha */
 /* eslint-disable func-names, prefer-arrow-callback */
 
-'use strict';
 
 const IPFS = require('ipfs');
 const assert = require('assert');
@@ -23,17 +22,17 @@ describe('dataManagement', function () {
   // TODO check if path is correct
   it('createPost should run correctly without errors', function () {
     return dm.createPost(node, 'Hello world!')
-	     .then((files) => {
-               assert(files.length > 1, 'has at least 2 file references (file and directory)');
-	     });
+     .then((files) => {
+       assert(files.length > 1, 'has at least 2 file references (file and directory)');
+     });
   });
 
   // TODO check hash as well
   it('createComment should run correctly without errors', function () {
     return dm.createComment(node, 'fake hashID', 'fake postID', 'Hello world!')
-	     .then((files) => {
-               assert(files.length > 1, 'has at least 2 file references (file and directory)');
-	     });
+     .then((files) => {
+       assert(files.length > 1, 'has at least 2 file references (file and directory)');
+     });
   });
 
   it('loadFile should refuse tampered data', function () {
@@ -49,26 +48,24 @@ describe('dataManagement', function () {
 
     return new Promise((resolve, reject) => {
       node.files.add(file, (err, files) => {
-	if (err != null) {
-          reject(err);
-	  return;
-	}
+        if (err != null) {
+	  reject(err);
+        }
 
-	dm.loadFile(node, files[0].hash)
-	  .then((err) => {
-	    reject(new Error("should reject tampered data"));
+        dm.loadFile(node, files[0].hash)
+	  .then(() => {
+	    reject(new Error('should reject tampered data'));
 	  })
-	  .catch(e => {
+	  .catch(() => {
 	    resolve();
 	  });
       });
     });
-    
   });
 
 
-  it('createPost should reject large files', function() {
-    var largefile = 'Ultimate frisbee is great';
+  it('createPost should reject large files', function () {
+    let largefile = 'Ultimate frisbee is great';
 
     // consecutive proto.repeat() seems to be the most efficient way
     // to create a large string
@@ -76,16 +73,15 @@ describe('dataManagement', function () {
     largefile = largefile.repeat(10);
     largefile = largefile.repeat(10);
     largefile = largefile.repeat(10);
-    
+
     return new Promise((resolve, reject) => {
       dm.createPost(node, largefile)
-	.then(files => {
+	.then(() => {
 	  reject(new Error('should reject large files'));
-	})
-	.catch(e => {
+        })
+	.catch(() => {
 	  resolve();
-	});
+        });
     });
   });
-
 });
